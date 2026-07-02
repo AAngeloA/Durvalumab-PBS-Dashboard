@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Durvalumab PBS Market Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfaf8; --bg2:#ffffff; --panel:#ffffff; --panel2:#f6f3ef;
+    --line:#e8e2dc; --line2:#d7cfc6;
+    --text:#2d2a32; --muted:#7d7684; --faint:#9a93a1;
+    --durva:#830051; --durva-dim:#f2dfeb;
+    --cm816:#b07b00; --cm816-dim:#faeed2;
+    --atezo:#17758a; --atezo-dim:#dbeef2;
+    --gold:#b8860b; --good:#1a7f37; --bad:#c02e3d;
+    --grid:rgba(45,42,50,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:
+      radial-gradient(1100px 600px at 85% -5%, rgba(131,0,81,.04), transparent 60%),
+      radial-gradient(900px 500px at 0% 100%, rgba(240,171,0,.04), transparent 55%),
+      var(--bg);
+    color:var(--text); font-family:'Inter',sans-serif; line-height:1.46; font-size:16px; font-weight:500;
+    -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:32px 28px 80px}
+  .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+
+  /* HEADER */
+  header{background:linear-gradient(120deg,#830051,#5c0e3f 72%);border-radius:16px;
+    padding:28px 30px 26px;margin-bottom:8px}
+  .head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+  .brand-logo{background:#fff;border-radius:10px;padding:9px 15px;flex:none;
+    box-shadow:0 2px 10px rgba(0,0,0,.18);align-self:flex-start;margin-top:4px}
+  .brand-logo img{height:44px;display:block}
+  @media(max-width:560px){.brand-logo img{height:34px}}
+  .footer-logo{height:26px;opacity:.85;vertical-align:middle;margin-right:14px}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:#f0ab00;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:26px;height:1px;background:#f0ab00}
+  h1{font-family:'Inter',sans-serif;font-weight:800;font-size:clamp(28px,4.2vw,46px);
+    line-height:1.04;letter-spacing:-.02em;color:#fff}
+  h1 em{font-style:normal;color:#f0ab00}
+  .sub{color:#e7c3d8;font-size:14.5px;margin-top:14px;max-width:760px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:18px;font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;color:rgba(255,255,255,.55);letter-spacing:.04em}
+  .meta b{color:#e7c3d8;font-weight:500}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:20;display:flex;gap:0;flex-wrap:wrap;
+    padding:12px 0 0;margin:10px 0 28px;border-bottom:2px solid var(--line);
+    background:linear-gradient(var(--bg) 82%,rgba(251,250,248,.65));backdrop-filter:blur(4px)}
+  nav button{font-family:'Inter',sans-serif;font-size:12px;letter-spacing:.05em;font-weight:600;
+    text-transform:uppercase;color:var(--muted);background:transparent;border:none;
+    border-bottom:3px solid transparent;margin-bottom:-2px;
+    padding:10px 15px;cursor:pointer;transition:.18s}
+  nav button:hover{color:var(--text)}
+  nav button.active{color:var(--durva);border-bottom-color:var(--durva);font-weight:700}
+
+  section{display:none;animation:fade .4s ease}
+  section.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin:6px 0 22px;flex-wrap:wrap}
+  .sec-head h2{font-family:'Inter',sans-serif;font-weight:800;font-size:25px;letter-spacing:-.02em;color:var(--durva)}
+  .sec-head .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);
+    letter-spacing:.06em;padding-top:6px}
+
+  /* GRID + CARDS */
+  .grid{display:grid;gap:16px}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g21{grid-template-columns:1.4fr 1fr}
+  @media(max-width:880px){.g4,.g3,.g2,.g21{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.g4,.g3,.g2,.g21{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);
+    border:1px solid var(--line);border-radius:12px;padding:20px;position:relative;overflow:hidden;
+    box-shadow:0 1px 3px rgba(45,42,50,.06)}
+  .card.pad{padding:22px 24px}
+  .card-title{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;
+    align-items:center;justify-content:space-between}
+
+  .kpi{display:flex;flex-direction:column;gap:5px}
+  .kpi .label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted)}
+  .kpi .val{font-family:'Inter',sans-serif;font-size:34px;font-weight:800;line-height:1;letter-spacing:-.02em}
+  .kpi .val.sm{font-size:30px}
+  .kpi .unit{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint);margin-top:3px}
+  .kpi .dot{position:absolute;top:18px;right:18px;width:9px;height:9px;border-radius:50%}
+  .kpi.durva .val{color:var(--durva)} .kpi.durva .dot{background:var(--durva)}
+  .kpi.cm816 .val{color:var(--cm816)} .kpi.cm816 .dot{background:var(--cm816)}
+  .kpi.atezo .val{color:var(--atezo)} .kpi.atezo .dot{background:var(--atezo)}
+  .kpi.gold .val{color:var(--gold)} .kpi.gold .dot{background:var(--gold)}
+
+  .delta{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;
+    display:inline-flex;align-items:center;gap:4px;margin-top:4px}
+  .delta.up{color:var(--good)} .delta.down{color:var(--bad)} .delta.flat{color:var(--muted)}
+
+  .chart-box{position:relative;height:300px}
+  .chart-box.tall{height:340px}
+  .chart-box.sm{height:230px}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:right;padding:9px 10px;border-bottom:1px solid var(--line)}
+  tbody td{color:var(--text);font-weight:600}
+  th:first-child,td:first-child{text-align:left}
+  thead th{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line2)}
+  tbody tr:hover{background:rgba(45,42,50,.03)}
+  td.num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+  tr.total td{font-weight:600;border-top:1px solid var(--line2);border-bottom:none;color:var(--text)}
+  .pill{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
+  .pill.d{background:var(--durva-dim);color:var(--durva)}
+  .pill.c{background:var(--cm816-dim);color:var(--cm816)}
+  .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;vertical-align:middle}
+
+  /* mini bar in table */
+  .barcell{position:relative;min-width:120px}
+  .barcell .track{height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:5px}
+  .barcell .fill{height:100%;border-radius:4px}
+
+  .note{font-size:13px;color:var(--faint);margin-top:14px;line-height:1.5;
+    border-top:1px dashed var(--line);padding-top:12px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;color:var(--muted);margin-bottom:4px}
+  .legend span{display:flex;align-items:center}
+  .full{grid-column:1/-1}
+  .footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);letter-spacing:.04em}
+
+  /* indication selector */
+  .indsel{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+  .indsel button{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;
+    color:var(--muted);background:var(--panel);border:1px solid var(--line);
+    padding:8px 16px;border-radius:8px;cursor:pointer;transition:.18s;font-weight:600}
+  .indsel button:hover{color:var(--text);border-color:var(--line2)}
+  .indsel button.active{color:#fff}
+  .ind-desc{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--faint);
+    margin:-6px 0 18px;letter-spacing:.03em}
+  /* matrix */
+  .matrix{overflow-x:auto;margin:-4px -6px}
+  .matrix table{min-width:760px}
+  .matrix th,.matrix td{padding:7px 9px;font-size:12px}
+  .matrix td.num{position:relative;z-index:1}
+  .matrix td.heat{border-radius:3px}
+  .matrix td.rowtot{font-weight:600}
+  .matrix .share{font-family:'IBM Plex Mono',monospace;color:var(--gold)}
+  /* pies */
+  .pie-h{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--text);font-weight:700;margin-bottom:8px}
+  .pie-cap{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;
+    margin-top:14px;color:var(--text)}
+  .pie-cap b{font-weight:700}
+  #esStateSel,#cmScopeSel{margin:2px 0 20px}
+  #esStateSel button,#cmScopeSel button{padding:7px 14px;font-size:12px}
+  @media print{
+    nav{display:none!important}
+    .card{break-inside:avoid}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="head-row">
+      <div>
+        <div class="eyebrow">PBS / RPBS Market Intelligence &nbsp;·&nbsp; Medicare Statistics Portal</div>
+        <h1>Durvalumab <em>PBS</em> Dashboard</h1>
+      </div>
+      <div class="brand-logo"><img src="data:image/png;base64,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" alt="IMFINZI® (durvalumab) logo"></div>
+    </div>
+    <p class="sub">Dispensing analysis across indications, with head-to-head comparisons against competitor immuno-oncology agents and state-level penetration. Figures are PBS + RPBS services combined.</p>
+    <div class="meta">
+      <span><b>Period</b> &nbsp;Apr 2025 – Apr 2026 (13M)</span>
+      <span><b>MAT window</b> &nbsp;May 2025 – Apr 2026</span>
+      <span><b>Source</b> &nbsp;Medicare Statistics Portal</span>
+      <span><b>Total Durvalumab MAT</b> &nbsp;16,947 services</span>
+    </div>
+  </header>
+
+  <nav id="nav">
+    <button class="active" data-sec="overview">OVERVIEW</button>
+    <button data-sec="durva">DURVALUMAB National</button>
+    <button data-sec="deepdive">STATE x MONTH ALL INDICATIONS</button>
+    <button data-sec="bystate">BY STATE x INDICATION</button>
+    <button data-sec="pacific">PACIFIC · Durva vs CM816</button>
+    <button data-sec="essclc">ES-SCLC · Durva vs Atezo</button>
+    <button data-sec="cm816">CM816 · Nivolumab</button>
+  </nav>
+
+  <!-- ============ SECTION 0 : OVERVIEW ============ -->
+  <section id="overview" class="active">
+    <div class="sec-head">
+      <h2>Executive Summary</h2>
+      <span class="tag">Portfolio at a glance · all indications · MAT May 25 – Apr 26</span>
+    </div>
+
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card kpi durva"><span class="dot"></span><span class="label">Durvalumab MAT</span>
+        <span class="val">16,947</span><span class="unit">services · ~1,412/mo</span></div>
+      <div class="card kpi"><span class="label">rQTR growth</span>
+        <span class="val sm" style="color:var(--good)">+3.7%</span>
+        <span class="unit">Feb–Apr 26 vs Nov–Jan 26</span></div>
+      <div class="card kpi"><span class="label">MoM growth</span>
+        <span class="val sm" style="color:var(--good)">+7.0%</span>
+        <span class="unit">Apr-26 vs Mar-26</span></div>
+      <div class="card kpi gold"><span class="dot"></span><span class="label">Funded indications</span>
+        <span class="val">7</span><span class="unit">2 new listings in Apr-26</span></div>
+    </div>
+
+    <div class="grid g21" style="margin-bottom:16px">
+      <div class="card pad">
+        <div class="card-title">Indication scorecard <span class="mono" style="font-size:11px;color:var(--faint)">trend = monthly services</span></div>
+        <table>
+          <thead><tr><th>Indication</th><th>Total</th><th>Trend</th><th>Latest mo</th><th>rQTR</th></tr></thead>
+          <tbody id="ovTable"></tbody>
+        </table>
+        <div class="note">CASPIAN shown over 12M (Durvalumab init + cont items); all others over 13M (Apr 25 – Apr 26).</div>
+      </div>
+      <div class="card pad">
+        <div class="card-title">Signals — April 2026</div>
+        <div id="ovSignals" style="display:flex;flex-direction:column;gap:13px;font-size:13.5px;line-height:1.5"></div>
+      </div>
+    </div>
+
+    <div class="grid g2">
+      <div class="card pad">
+        <div class="card-title">New listings — cumulative uptake since launch
+          <span class="mono" style="font-size:11px;color:var(--faint)">HCC · Endometrial · NIAGARA · ADRIATIC</span></div>
+        <div class="chart-box"><canvas id="ovLaunch"></canvas></div>
+        <div class="note">HCC (Nov-25 listing) is the fastest ramp of the recent launches — 100 services in Apr-26 alone. NIAGARA and ADRIATIC recorded first dispensings in Apr-26.</div>
+      </div>
+      <div class="card pad">
+        <div class="card-title">Competitive position — Durvalumab share of pair</div>
+        <div class="chart-box"><canvas id="ovComp"></canvas></div>
+        <div class="note">PACIFIC dominates its pair vs CM816 Nivolumab; in ES-SCLC, Durvalumab captures ~27% of new starts but only ~15% of continuations against Atezolizumab's established base.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 1 : PACIFIC ============ -->
+  <section id="pacific">
+    <div class="sec-head">
+      <h2>PACIFIC — Durvalumab vs CM816 Nivolumab</h2>
+      <span class="tag">Stage III NSCLC maintenance · 11911X+11915D vs 14232C+14233D</span>
+    </div>
+
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card kpi durva"><span class="dot"></span>
+        <span class="label">PACIFIC — Durvalumab</span>
+        <span class="val">6,936</span><span class="unit">services · 89.0% of pair</span></div>
+      <div class="card kpi cm816"><span class="dot"></span>
+        <span class="label">CM816 — Nivolumab</span>
+        <span class="val">857</span><span class="unit">services · 11.0% of pair</span></div>
+      <div class="card kpi gold"><span class="dot"></span>
+        <span class="label">Volume ratio</span>
+        <span class="val">8.1×</span><span class="unit">PACIFIC larger · gap 6,079</span></div>
+      <div class="card kpi"><span class="label">Avg / month</span>
+        <span class="val sm" style="color:var(--text)">534</span>
+        <span class="unit">PACIFIC vs 66 CM816</span></div>
+    </div>
+
+    <div class="grid g21" style="margin-bottom:16px">
+      <div class="card pad">
+        <div class="card-title">Monthly dispensings — PACIFIC vs CM816
+          <span class="legend"><span><i class="swatch" style="background:var(--durva)"></i>Durva</span><span><i class="swatch" style="background:var(--cm816)"></i>CM816</span></span></div>
+        <div class="chart-box"><canvas id="pacMonthly"></canvas></div>
+      </div>
+      <div class="card pad">
+        <div class="card-title">Growth metrics</div>
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div>
+            <div class="kpi durva"><span class="label">PACIFIC · rQTR growth</span>
+            <span class="val sm">−4.2%</span></div>
+            <div class="unit mono" style="color:var(--faint);font-size:11px;margin-top:3px">Feb–Apr 26 (1,456) vs Nov–Jan 26 (1,520)</div>
+          </div>
+          <div>
+            <div class="kpi durva"><span class="label">PACIFIC · MoM growth</span>
+            <span class="val sm">−1.4%</span></div>
+            <div class="unit mono" style="color:var(--faint);font-size:11px;margin-top:3px">Apr-26 (488) vs Mar-26 (495)</div>
+          </div>
+          <div style="border-top:1px solid var(--line);padding-top:14px">
+            <div class="kpi cm816"><span class="label">CM816 · rQTR growth</span>
+            <span class="val sm">0.0%</span></div>
+            <div class="unit mono" style="color:var(--faint);font-size:11px;margin-top:3px">210 vs 210 — flat</div>
+            <div class="delta up" style="margin-top:10px">▲ +42.9% &nbsp;<span style="color:var(--faint);font-weight:400">CM816 MoM (90 vs 63)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid g21">
+      <div class="card pad">
+        <div class="card-title">State dispensings — PACIFIC vs CM816</div>
+        <div class="chart-box tall"><canvas id="pacState"></canvas></div>
+      </div>
+      <div class="card pad">
+        <div class="card-title">Per-state detail</div>
+        <table>
+          <thead><tr><th>State</th><th>Durva</th><th>CM816</th><th>Lead</th></tr></thead>
+          <tbody id="pacStateTable"></tbody>
+        </table>
+        <div class="note">PACIFIC leads in every state except the ACT, where CM816 is marginally ahead (8 vs 1).</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2 : DURVA MAT ============ -->
+  <section id="durva">
+    <div class="sec-head">
+      <h2>Durvalumab — MAT, rQTR & Monthly Growth</h2>
+      <span class="tag">All indications · National services</span>
+    </div>
+
+    <div class="grid g3" style="margin-bottom:16px">
+      <div class="card kpi durva"><span class="dot"></span><span class="label">MAT — total services</span>
+        <span class="val">16,947</span><span class="unit">May 25 – Apr 26 · ~1,412/mo</span></div>
+      <div class="card kpi"><span class="label">rQTR growth (brand)</span>
+        <span class="val sm" style="color:var(--good)">+3.7%</span>
+        <span class="unit">Feb–Apr 26 (3,978) vs Nov–Jan 26 (3,836)</span></div>
+      <div class="card kpi"><span class="label">MoM growth (brand)</span>
+        <span class="val sm" style="color:var(--good)">+7.0%</span>
+        <span class="unit">Apr-26 (1,413) vs Mar-26 (1,320)</span></div>
+    </div>
+
+    <div class="grid g21" style="margin-bottom:16px">
+      <div class="card pad">
+        <div class="card-title">Monthly national services — all indications
+          <span class="mono" style="font-size:11px;color:var(--faint)">Apr 25 → Apr 26</span></div>
+        <div class="chart-box"><canvas id="durvaMonthly"></canvas></div>
+        <div class="note">Shaded bands mark the rolling-quarter windows used for rQTR: prior (Nov–Jan) vs current (Feb–Apr).</div>
+      </div>
+      <div class="card pad">
+        <div class="card-title">MAT share by indication</div>
+        <div class="chart-box"><canvas id="durvaDonut"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid g2">
+      <div class="card pad">
+        <div class="card-title">MAT by indication</div>
+        <table>
+          <thead><tr><th>Indication</th><th>13M</th><th>Share</th><th>Avg/mo</th></tr></thead>
+          <tbody id="matTable"></tbody>
+        </table>
+      </div>
+      <div class="card pad">
+        <div class="card-title">Durvalumab services by state — all indications</div>
+        <div class="chart-box sm" style="height:300px"><canvas id="durvaState"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2B : DEEP DIVE ============ -->
+  <section id="deepdive">
+    <div class="sec-head">
+      <h2>State × Month — Indication Deep-Dive</h2>
+      <div class="indsel" id="indSel">
+        <button class="active" data-ind="PACIFIC">PACIFIC</button>
+        <button data-ind="CASPIAN">CASPIAN</button>
+        <button data-ind="ADRIATIC">ADRIATIC</button>
+        <button data-ind="BTC">BTC</button>
+        <button data-ind="HCC">LIVER (HCC)</button>
+        <button data-ind="NIAGARA">BLADDER (NIAGARA)</button>
+        <button data-ind="ENDOMETRIAL">ENDOMETRIAL</button>
+      </div>
+    </div>
+    <div class="ind-desc" id="indDesc"></div>
+
+    <div class="indsel" id="segSel" style="display:none;margin:-6px 0 16px">
+      <button class="active" data-seg="all">All</button>
+      <button data-seg="init">Initiations</button>
+      <button data-seg="cont">Continuations</button>
+    </div>
+
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card kpi"><span class="label" id="ddMatL">MAT — 12M services</span>
+        <span class="val" id="ddMat">—</span><span class="unit" id="ddMatU"></span></div>
+      <div class="card kpi"><span class="label" id="ddMatGL">MAT growth</span>
+        <span class="val sm" id="ddMatG">—</span><span class="unit" id="ddMatGU"></span></div>
+      <div class="card kpi"><span class="label" id="ddRqtrL">rQTR growth</span>
+        <span class="val sm" id="ddRqtr">—</span><span class="unit" id="ddRqtrU"></span></div>
+      <div class="card kpi"><span class="label" id="ddMomL">MoM growth</span>
+        <span class="val sm" id="ddMom">—</span><span class="unit" id="ddMomU"></span></div>
+    </div>
+
+    <div class="grid g21" style="margin-bottom:16px">
+      <div class="card pad">
+        <div class="card-title" id="ddAreaTitle">Monthly dispensings by state <span class="mono" style="font-size:11px;color:var(--faint)">stacked · Apr 25 → Apr 26</span></div>
+        <div class="chart-box tall"><canvas id="ddArea"></canvas></div>
+      </div>
+      <div class="card pad">
+        <div class="card-title" id="ddContribTitle">State contribution <span class="mono" style="font-size:11px;color:var(--faint)">% of 13M total</span></div>
+        <div class="indsel" id="ddModeSel" style="margin:0 0 12px">
+          <button class="active" data-mode="pct" style="padding:6px 12px;font-size:11px">% of total</button>
+          <button data-mode="cap" style="padding:6px 12px;font-size:11px">per 100k pop</button>
+        </div>
+        <div class="chart-box tall"><canvas id="ddContrib"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card pad">
+      <div class="card-title" id="ddMatrixTitle">Per-state, per-month matrix <span class="mono" style="font-size:11px;color:var(--faint)">cell shading = relative volume</span></div>
+      <div class="indsel" id="ddMatrixSeg" style="display:none;margin:0 0 14px">
+        <button class="active" data-mseg="all">All</button>
+        <button data-mseg="init">Initiations</button>
+        <button data-mseg="cont">Continuations</button>
+      </div>
+      <div class="matrix"><table>
+        <thead><tr id="ddMatrixHead"></tr></thead>
+        <tbody id="ddMatrixBody"></tbody>
+      </table></div>
+      <div class="note" id="ddNote"></div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2C : BY STATE ============ -->
+  <section id="bystate">
+    <div class="sec-head">
+      <h2>By State — Growth per Indication</h2>
+      <div class="indsel" id="bsStateSel">
+        <button class="active" data-bs="ALL">National</button>
+        <button data-bs="NSW">NSW</button>
+        <button data-bs="VIC">VIC</button>
+        <button data-bs="QLD">QLD</button>
+        <button data-bs="SA">SA</button>
+        <button data-bs="WA">WA</button>
+        <button data-bs="TAS">TAS</button>
+        <button data-bs="ACT">ACT</button>
+        <button data-bs="NT">NT</button>
+      </div>
+    </div>
+    <div class="ind-desc" id="bsDesc"></div>
+
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card kpi durva"><span class="dot"></span><span class="label">Durvalumab MAT — 12M</span>
+        <span class="val" id="bsKMat">—</span><span class="unit" id="bsKMatU"></span></div>
+      <div class="card kpi"><span class="label">MAT growth</span>
+        <span class="val sm" id="bsKMatG">—</span><span class="unit" id="bsKMatGU"></span></div>
+      <div class="card kpi"><span class="label">rQTR growth</span>
+        <span class="val sm" id="bsKRqtr">—</span><span class="unit" id="bsKRqtrU"></span></div>
+      <div class="card kpi"><span class="label">MoM growth</span>
+        <span class="val sm" id="bsKMom">—</span><span class="unit" id="bsKMomU"></span></div>
+    </div>
+
+    <div class="grid g21" style="margin-bottom:16px">
+      <div class="card pad">
+        <div class="card-title" id="bsAreaTitle">Monthly dispensings by indication <span class="mono" style="font-size:11px;color:var(--faint)">stacked · Apr 25 → Apr 26</span></div>
+        <div class="chart-box tall"><canvas id="bsArea"></canvas></div>
+      </div>
+      <div class="card pad">
+        <div class="card-title">Indication mix <span class="mono" style="font-size:11px;color:var(--faint)">12M share of state</span></div>
+        <div class="chart-box tall"><canvas id="bsMix"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card pad">
+      <div class="card-title" id="bsTableTitle">Growth per indication
+        <span class="mono" style="font-size:11px;color:var(--faint)">MoM · rQTR · MAT</span></div>
+      <div class="matrix"><table>
+        <thead><tr>
+          <th>Indication</th><th>12M total</th><th>Latest mo</th>
+          <th>MoM</th><th>rQTR</th><th>MAT</th>
+        </tr></thead>
+        <tbody id="bsTable"></tbody>
+      </table></div>
+      <div class="note" id="bsNote"></div>
+    </div>
+
+    <div class="card pad" style="margin-top:16px">
+      <div class="card-title" id="bsMxTitle">Monthly services by indication
+        <span class="mono" style="font-size:11px;color:var(--faint)">Apr 25 → Apr 26 · cell shading = volume</span></div>
+      <div class="matrix"><table>
+        <thead><tr id="bsMxHead"></tr></thead>
+        <tbody id="bsMxBody"></tbody>
+      </table></div>
+      <div class="note" id="bsMxNote"></div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 3 : ES-SCLC ============ -->
+  <section id="essclc">
+    <div class="sec-head">
+      <h2>ES-SCLC — Durvalumab vs Atezolizumab</h2>
+      <span class="tag">Extensive-stage SCLC · Initiations · Continuations · Combined · last 12M (May 25 – Apr 26)</span>
+    </div>
+
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card kpi durva"><span class="dot"></span><span class="label">Durva share — Initiations</span>
+        <span class="val">26.7%</span><span class="unit">911 of 3,410 combined</span></div>
+      <div class="card kpi atezo"><span class="dot"></span><span class="label">Atezo — Initiations</span>
+        <span class="val sm">2,499</span><span class="unit">73.3% share</span></div>
+      <div class="card kpi durva"><span class="dot"></span><span class="label">Durva share — Continuations</span>
+        <span class="val">14.7%</span><span class="unit">712 of 4,857 combined</span></div>
+      <div class="card kpi atezo"><span class="dot"></span><span class="label">Atezo — Continuations</span>
+        <span class="val sm">4,145</span><span class="unit">85.3% share</span></div>
+    </div>
+
+    <div class="card pad" style="margin-bottom:16px">
+      <div class="card-title">Molecule split — Durvalumab vs Atezolizumab
+        <span class="legend"><span><i class="swatch" style="background:var(--durva)"></i>Durva</span><span><i class="swatch" style="background:var(--atezo)"></i>Atezo</span></span></div>
+      <div class="indsel" id="esStateSel">
+        <button class="active" data-st="ALL">All</button>
+        <button data-st="NSW">NSW</button>
+        <button data-st="VIC">VIC</button>
+        <button data-st="QLD">QLD</button>
+        <button data-st="SA">SA</button>
+        <button data-st="WA">WA</button>
+        <button data-st="TAS">TAS</button>
+        <button data-st="ACT">ACT</button>
+        <button data-st="NT">NT</button>
+      </div>
+      <div class="grid g3">
+        <div style="text-align:center">
+          <div class="pie-h">Initiations</div>
+          <div class="chart-box" style="height:230px;max-width:230px;margin:0 auto"><canvas id="esPieInit"></canvas></div>
+          <div class="pie-cap" id="esPieInitCap"></div>
+        </div>
+        <div style="text-align:center">
+          <div class="pie-h">Continuations</div>
+          <div class="chart-box" style="height:230px;max-width:230px;margin:0 auto"><canvas id="esPieCont"></canvas></div>
+          <div class="pie-cap" id="esPieContCap"></div>
+        </div>
+        <div style="text-align:center">
+          <div class="pie-h">Combined</div>
+          <div class="chart-box" style="height:230px;max-width:230px;margin:0 auto"><canvas id="esPieComb"></canvas></div>
+          <div class="pie-cap" id="esPieCombCap"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-bottom:16px">
+      <div class="card pad">
+        <div class="card-title">Monthly Durvalumab share %
+          <span class="legend"><span><i class="swatch" style="background:var(--durva)"></i>Init</span><span><i class="swatch" style="background:var(--gold)"></i>Cont</span><span><i class="swatch" style="background:#3d3a44"></i>Combined</span></span></div>
+        <div class="chart-box"><canvas id="esShareLine"></canvas></div>
+      </div>
+      <div class="card pad">
+        <div class="card-title">Monthly volumes — Durva vs Atezo (Init + Cont)</div>
+        <div class="chart-box"><canvas id="esVolume"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid g3">
+      <div class="card pad">
+        <div class="card-title">Durvalumab share % by state — INITIATIONS</div>
+        <table>
+          <thead><tr><th>State</th><th>Durva</th><th>Atezo</th><th class="barcell">Durva share %</th></tr></thead>
+          <tbody id="esInitTable"></tbody>
+        </table>
+      </div>
+      <div class="card pad">
+        <div class="card-title">Durvalumab share % by state — CONTINUATIONS</div>
+        <table>
+          <thead><tr><th>State</th><th>Durva</th><th>Atezo</th><th class="barcell">Durva share %</th></tr></thead>
+          <tbody id="esContTable"></tbody>
+        </table>
+      </div>
+      <div class="card pad">
+        <div class="card-title">Durvalumab share % by state — COMBINED</div>
+        <table>
+          <thead><tr><th>State</th><th>Durva</th><th>Atezo</th><th class="barcell">Durva share %</th></tr></thead>
+          <tbody id="esCombTable"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="note full" style="border:none;color:var(--faint)">
+      Durvalumab items — init 13775B / 13779F · cont 13766M / 13780G &nbsp;·&nbsp; Atezolizumab items — init 11926Q / 11927R · cont 11928T / 11929W / 12076N / 12078Q.
+      Durvalumab captures roughly a quarter of new ES-SCLC starts but a much smaller slice of ongoing therapy, reflecting Atezolizumab's earlier-established continuation base.
+    </div>
+  </section>
+
+  <!-- ============ SECTION 5 : CM816 NIVOLUMAB ============ -->
+  <section id="cm816">
+    <div class="sec-head">
+      <h2>CM816 — Nivolumab (Opdivo®)</h2>
+      <span class="tag">Stage III NSCLC · items 14232C (private) + 14233D (public) · Apr 25 – Apr 26</span>
+    </div>
+
+    <div class="indsel" id="cmScopeSel">
+      <button class="active" data-sc="ALL">National</button>
+      <button data-sc="NSW">NSW</button>
+      <button data-sc="VIC">VIC</button>
+      <button data-sc="QLD">QLD</button>
+      <button data-sc="SA">SA</button>
+      <button data-sc="WA">WA</button>
+      <button data-sc="TAS">TAS</button>
+      <button data-sc="ACT">ACT</button>
+      <button data-sc="NT">NT</button>
+    </div>
+
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card kpi cm816"><span class="dot"></span><span class="label">MAT — 12M services</span>
+        <span class="val" id="cmMat">—</span><span class="unit" id="cmMatU"></span></div>
+      <div class="card kpi"><span class="label">MAT growth</span>
+        <span class="val sm" id="cmMatG">—</span><span class="unit" id="cmMatGU"></span></div>
+      <div class="card kpi"><span class="label">rQTR growth</span>
+        <span class="val sm" id="cmRqtr">—</span><span class="unit" id="cmRqtrU"></span></div>
+      <div class="card kpi"><span class="label">MoM growth</span>
+        <span class="val sm" id="cmMom">—</span><span class="unit" id="cmMomU"></span></div>
+    </div>
+
+    <div class="grid g21" style="margin-bottom:16px">
+      <div class="card pad">
+        <div class="card-title" id="cmMonthlyTitle">Monthly dispensings</div>
+        <div class="chart-box tall"><canvas id="cmMonthly"></canvas></div>
+      </div>
+      <div class="card pad">
+        <div class="card-title">Share by state <span class="mono" style="font-size:11px;color:var(--faint)">13M · selected highlighted</span></div>
+        <div class="chart-box tall"><canvas id="cmContrib"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card pad">
+      <div class="card-title">Per-state, per-month dispensings <span class="mono" style="font-size:11px;color:var(--faint)">cell shading = volume</span></div>
+      <div class="matrix"><table>
+        <thead><tr id="cmMatrixHead"></tr></thead>
+        <tbody id="cmMatrixBody"></tbody>
+      </table></div>
+      <div class="note" id="cmNote"></div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <img class="footer-logo" src="data:image/png;base64,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" alt="IMFINZI logo">
+    Durvalumab PBS Analysis · April 2026 update &nbsp;|&nbsp; All figures PBS + RPBS services combined, Medicare Statistics Portal &nbsp;|&nbsp; rQTR = rolling 3-month quarter · MoM = month-on-month · MAT = moving annual total
+  </div>
+</div>
+
+<script>
+const C={durva:'#830051',cm816:'#f0ab00',atezo:'#2494a6',gold:'#b8860b',text:'#2d2a32',muted:'#7d7684',grid:'rgba(45,42,50,.08)'};
+const MONTHS=['Apr-25','May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26','Apr-26'];
+const MONTHS12=['May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26','Apr-26'];
+
+Chart.defaults.font.family="'IBM Plex Mono',monospace";
+Chart.defaults.font.size=11;
+Chart.defaults.color=C.muted;
+Chart.defaults.plugins.legend.display=false;
+
+const gridCfg={grid:{color:C.grid,drawTicks:false},border:{display:false},ticks:{padding:8}};
+const baseScales=()=>({x:{...gridCfg},y:{...gridCfg,beginAtZero:true}});
+
+/* ---------- SECTION 1 : PACIFIC ---------- */
+const pacDurva=[555,594,621,600,512,538,540,478,546,496,473,495,488];
+const pacCm816=[45,71,54,68,53,59,87,64,75,71,57,63,90];
+
+new Chart(pacMonthly,{type:'line',
+  data:{labels:MONTHS,datasets:[
+    {label:'Durva',data:pacDurva,borderColor:C.durva,backgroundColor:'rgba(131,0,81,.08)',fill:true,tension:.35,borderWidth:2.5,pointRadius:0,pointHoverRadius:5},
+    {label:'CM816',data:pacCm816,borderColor:C.cm816,backgroundColor:'rgba(240,171,0,.08)',fill:true,tension:.35,borderWidth:2.5,pointRadius:0,pointHoverRadius:5}
+  ]},
+  options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:12}},
+    scales:baseScales()}});
+
+const pacStates=[
+  ['NSW',1936,234],['VIC',1524,251],['QLD',1885,135],['SA',408,68],
+  ['WA',892,151],['TAS',213,10],['ACT',1,8],['NT',77,0]];
+new Chart(pacState,{type:'bar',
+  data:{labels:pacStates.map(s=>s[0]),datasets:[
+    {label:'Durva',data:pacStates.map(s=>s[1]),backgroundColor:C.durva,borderRadius:4,barPercentage:.7},
+    {label:'CM816',data:pacStates.map(s=>s[2]),backgroundColor:C.cm816,borderRadius:4,barPercentage:.7}
+  ]},
+  options:{maintainAspectRatio:false,indexAxis:'y',
+    plugins:{tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10}},
+    scales:{x:{...gridCfg,beginAtZero:true},y:{...gridCfg}}}});
+
+const pst=document.getElementById('pacStateTable');
+const pacShareD={NSW:27.9,VIC:22.0,QLD:27.2,SA:5.9,WA:12.9,TAS:3.1,ACT:0.0,NT:1.1};
+const pacShareC={NSW:27.3,VIC:29.3,QLD:15.8,SA:7.9,WA:17.6,TAS:1.2,ACT:0.9,NT:0.0};
+pacStates.forEach(s=>{
+  const lead=s[1]>=s[2]?'<span class="pill d">PACIFIC</span>':'<span class="pill c">CM816</span>';
+  pst.innerHTML+=`<tr><td>${s[0]}</td>
+    <td class="num">${s[1].toLocaleString()}<br><span style="color:var(--faint);font-size:11px">${pacShareD[s[0]]}%</span></td>
+    <td class="num">${s[2].toLocaleString()}<br><span style="color:var(--faint);font-size:11px">${pacShareC[s[0]]}%</span></td>
+    <td>${lead}</td></tr>`;});
+pst.innerHTML+=`<tr class="total"><td>National</td><td class="num">6,936</td><td class="num">857</td><td><span class="pill d">8.1×</span></td></tr>`;
+
+/* ---------- SECTION 2 : DURVA MAT ---------- */
+const durvaNat=[1210,1326,1457,1382,1200,1223,1335,1171,1377,1288,1245,1320,1413];
+new Chart(durvaMonthly,{type:'line',
+  data:{labels:MONTHS,datasets:[
+    {label:'Durva total',data:durvaNat,borderColor:C.durva,
+     backgroundColor:(ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,300);
+       g.addColorStop(0,'rgba(131,0,81,.20)');g.addColorStop(1,'rgba(131,0,81,0)');return g;},
+     fill:true,tension:.35,borderWidth:2.5,pointRadius:0,pointHoverRadius:5}
+  ]},
+  options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:12},
+      annotation:false},
+    scales:baseScales()},
+  plugins:[{id:'bands',beforeDraw(c){const{ctx,chartArea:a,scales:{x}}=c;if(!a)return;
+    const band=(i0,i1,col)=>{const x0=x.getPixelForValue(i0),x1=x.getPixelForValue(i1);
+      ctx.save();ctx.fillStyle=col;ctx.fillRect(x0,a.top,x1-x0,a.bottom-a.top);ctx.restore();};
+    band(7,9,'rgba(240,171,0,.10)');   // Nov-Jan prior
+    band(10,12,'rgba(131,0,81,.06)'); // Feb-Apr current
+  }}]});
+
+const matData=[
+  ['BTC',7869,46.4,656],
+  ['PACIFIC',6936,40.9,578],
+  ['ES-SCLC (CASPIAN)',1736,10.2,145],
+  ['HCC',326,1.9,27],
+  ['ENDOMETRIAL',40,0.2,3],
+  ['NIAGARA',23,0.1,2],
+  ['ADRIATIC',17,0.1,1]];
+const matColors=[C.cm816,C.durva,C.atezo,'#8b5cf6','#2563eb','#94a3b8','#64748b'];
+const mt=document.getElementById('matTable');
+matData.forEach((r,i)=>{mt.innerHTML+=`<tr><td><span class="swatch" style="background:${matColors[i]}"></span>${r[0]}</td>
+  <td class="num">${r[1].toLocaleString()}</td><td class="num">${r[2]}%</td><td class="num">${r[3]}</td></tr>`;});
+mt.innerHTML+=`<tr class="total"><td>National total</td><td class="num">16,947</td><td class="num">100%</td><td class="num">1,412</td></tr>`;
+
+new Chart(durvaDonut,{type:'doughnut',
+  data:{labels:matData.map(r=>r[0]),datasets:[{data:matData.map(r=>r[1]),
+    backgroundColor:matColors,borderColor:'#ffffff',borderWidth:3,hoverOffset:6}]},
+  options:{maintainAspectRatio:false,cutout:'62%',
+    plugins:{legend:{display:true,position:'right',labels:{boxWidth:10,boxHeight:10,padding:9,font:{size:10.5}}},
+      tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,
+        callbacks:{label:c=>` ${c.label}: ${c.raw.toLocaleString()} (${(c.raw/16947*100).toFixed(1)}%)`}}}}});
+
+const durvaStates=[['NSW',5374,31.7],['QLD',3919,23.1],['VIC',3736,22.0],['WA',2275,13.4],['SA',1114,6.6],['TAS',395,2.3],['NT',110,0.6],['ACT',24,0.1]];
+new Chart(durvaState,{type:'bar',
+  data:{labels:durvaStates.map(s=>s[0]),datasets:[{data:durvaStates.map(s=>s[1]),
+    backgroundColor:C.durva,borderRadius:5,barPercentage:.72}]},
+  options:{maintainAspectRatio:false,
+    plugins:{tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,
+      callbacks:{label:c=>` ${c.raw.toLocaleString()} services · ${durvaStates[c.dataIndex][2]}%`}}},
+    scales:baseScales()}});
+
+/* ---------- SECTION 3 : ES-SCLC ---------- */
+const durvaInit=[77,66,86,79,78,75,62,92,65,71,71,89];
+const atezoInit=[180,224,230,194,225,255,197,218,203,179,198,196];
+const durvaCont=[46,67,76,49,41,67,58,70,63,51,67,57];
+const atezoCont=[372,400,374,320,360,375,293,338,327,332,328,326];
+const combShare=MONTHS12.map((_,i)=>{const d=durvaInit[i]+durvaCont[i],t=d+atezoInit[i]+atezoCont[i];return t?+(d/t*100).toFixed(1):0;});
+const initShare=[30.0,22.8,27.2,28.9,25.7,22.7,23.9,29.7,24.3,28.4,26.4,31.2];
+const contShare=[11.0,14.3,16.9,13.3,10.2,15.2,16.5,17.2,16.2,13.3,17.0,14.9];
+new Chart(esShareLine,{type:'line',
+  data:{labels:MONTHS12,datasets:[
+    {label:'Init share',data:initShare,borderColor:C.durva,backgroundColor:'rgba(131,0,81,.07)',fill:true,tension:.35,borderWidth:2.5,pointRadius:0,pointHoverRadius:5},
+    {label:'Cont share',data:contShare,borderColor:C.gold,backgroundColor:'rgba(184,134,11,.06)',fill:true,tension:.35,borderWidth:2.5,pointRadius:0,pointHoverRadius:5},
+    {label:'Combined share',data:combShare,borderColor:'#3d3a44',borderDash:[5,4],fill:false,tension:.35,borderWidth:2,pointRadius:0,pointHoverRadius:5}
+  ]},
+  options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:12,
+      callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}%`}}},
+    scales:{x:{...gridCfg},y:{...gridCfg,beginAtZero:true,max:40,ticks:{callback:v=>v+'%'}}}}});
+
+new Chart(esVolume,{type:'bar',
+  data:{labels:MONTHS12,datasets:[
+    {label:'Durva Init',data:durvaInit,backgroundColor:C.durva,stack:'d',borderRadius:2,barPercentage:.8},
+    {label:'Durva Cont',data:durvaCont,backgroundColor:C.durva+'88',stack:'d',borderRadius:2,barPercentage:.8},
+    {label:'Atezo Init',data:atezoInit,backgroundColor:C.atezo,stack:'a',borderRadius:2,barPercentage:.8},
+    {label:'Atezo Cont',data:atezoCont,backgroundColor:C.atezo+'88',stack:'a',borderRadius:2,barPercentage:.8}
+  ]},
+  options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,labels:{boxWidth:10,boxHeight:10,padding:10,font:{size:10}}},
+      tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10}},
+    scales:{x:{...gridCfg,stacked:true},y:{...gridCfg,stacked:true,beginAtZero:true}}}});
+
+// state tables init/cont
+const esInit=[['NSW',300,830],['VIC',203,510],['QLD',239,567],['SA',46,204],['WA',117,302],['TAS',2,57],['ACT',0,0],['NT',4,29]];
+const esCont=[['NSW',275,1274],['VIC',135,924],['QLD',158,943],['SA',55,400],['WA',84,516],['TAS',5,59],['ACT',0,15],['NT',0,14]];
+function fillES(id,rows,totD,totA){
+  const tb=document.getElementById(id);
+  rows.forEach(r=>{const comb=r[1]+r[2];const sh=comb?(r[1]/comb*100):0;
+    tb.innerHTML+=`<tr><td>${r[0]}</td><td class="num" style="color:var(--durva)">${r[1]}</td>
+      <td class="num" style="color:var(--atezo)">${r[2].toLocaleString()}</td>
+      <td class="barcell"><span class="mono" style="font-size:12px">${sh.toFixed(1)}%</span>
+        <div class="track"><div class="fill" style="width:${sh}%;background:var(--durva)"></div></div></td></tr>`;});
+  const comb=totD+totA,sh=(totD/comb*100);
+  tb.innerHTML+=`<tr class="total"><td>National</td><td class="num" style="color:var(--durva)">${totD.toLocaleString()}</td>
+    <td class="num" style="color:var(--atezo)">${totA.toLocaleString()}</td>
+    <td class="barcell"><span class="mono">${sh.toFixed(1)}%</span>
+      <div class="track"><div class="fill" style="width:${sh}%;background:var(--durva)"></div></div></td></tr>`;
+}
+fillES('esInitTable',esInit,911,2499);
+fillES('esContTable',esCont,712,4145);
+const esComb=esInit.map((r,i)=>[r[0],r[1]+esCont[i][1],r[2]+esCont[i][2]]);
+fillES('esCombTable',esComb,1623,6644);
+
+/* ---------- DEEP DIVE : PACIFIC / CASPIAN / ADRIATIC ---------- */
+const SC={NSW:'#830051',VIC:'#f0ab00',QLD:'#2494a6',SA:'#7c5cbf',WA:'#3b6fb6',TAS:'#1a7f37',ACT:'#d95d9a',NT:'#8a8694'};
+const STATE_ORDER=['NSW','VIC','QLD','SA','WA','TAS','ACT','NT'];
+const hexRGB=h=>{h=h.replace('#','');return[parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)];};
+const sum=a=>a.reduce((x,y)=>x+y,0);
+function gfmt(cur,prev){
+  if(prev===0) return cur>0?{t:'NEW',c:'var(--good)'}:{t:'—',c:'var(--muted)'};
+  const g=(cur-prev)/prev*100;
+  return {t:(g>=0?'+':'')+g.toFixed(1)+'%', c:g>=0?'var(--good)':'var(--bad)'};
+}
+// single-product indications (13 months Apr25→Apr26)
+const IND={
+  PACIFIC:{color:C.durva,desc:'Unresectable Stage III NSCLC, post-CRT maintenance · items 11911X + 11915D',
+    states:{NSW:[207,159,207,172,137,150,130,128,135,132,125,117,137],
+      VIC:[81,133,117,152,117,121,146,79,133,112,112,110,111],
+      QLD:[127,155,143,143,148,153,137,142,163,147,140,150,137],
+      SA:[28,33,36,32,32,35,31,32,32,27,28,32,30],
+      WA:[80,87,83,81,56,54,76,74,56,64,49,73,59],
+      TAS:[28,17,27,18,17,21,15,16,16,14,8,8,8],
+      ACT:[0,0,0,0,0,0,0,0,1,0,0,0,0],
+      NT:[4,10,8,2,5,4,5,7,10,0,11,5,6]}},
+  ADRIATIC:{color:C.gold,desc:'Durvalumab + tremelimumab combination · items 15324M + 15330W — first PBS dispensings recorded Apr-26',
+    states:{NSW:[0,0,0,0,0,0,0,0,0,0,0,0,7],
+      VIC:[0,0,0,0,0,0,0,0,0,0,0,0,4],
+      QLD:[0,0,0,0,0,0,0,0,0,0,0,0,2],
+      SA:[0,0,0,0,0,0,0,0,0,0,0,0,1],
+      WA:[0,0,0,0,0,0,0,0,0,0,0,0,3],
+      TAS:[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      ACT:[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      NT:[0,0,0,0,0,0,0,0,0,0,0,0,0]}},
+  BTC:{color:'#7c3aed',desc:'Biliary tract cancer · 1L with gemcitabine + cisplatin (TOPAZ-1)',
+    states:{NSW:[189,181,266,231,205,197,208,179,217,209,169,167,199],
+      VIC:[136,137,141,153,128,132,171,99,163,118,134,143,121],
+      QLD:[103,132,128,108,100,107,106,117,115,130,150,131,130],
+      SA:[27,43,64,30,35,39,43,39,49,55,47,43,60],
+      WA:[74,101,87,81,73,75,108,107,76,91,62,95,99],
+      TAS:[11,13,15,9,14,12,10,14,15,10,14,13,16],
+      ACT:[1,0,1,5,1,2,4,2,1,1,1,1,3],
+      NT:[1,2,1,3,3,1,2,3,2,1,2,3,3]}},
+  HCC:{color:'#ea580c',desc:'Hepatocellular carcinoma (liver) · 1L unresectable, durvalumab ± tremelimumab (HIMALAYA) — PBS dispensings from Nov-25',
+    states:{NSW:[0,0,0,0,0,0,0,5,12,22,24,37,43],
+      VIC:[0,0,0,0,0,0,0,0,5,5,20,15,24],
+      QLD:[0,0,0,0,0,0,0,0,5,5,14,18,17],
+      SA:[0,0,0,0,0,0,0,1,2,2,3,2,1],
+      WA:[0,0,0,0,0,0,0,0,2,8,2,10,14],
+      TAS:[0,0,0,0,0,0,0,0,0,1,3,2,1],
+      ACT:[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      NT:[0,0,0,0,0,0,0,0,0,1,0,0,0]}},
+  NIAGARA:{color:'#0891b2',desc:'Muscle-invasive bladder cancer · perioperative durvalumab + chemotherapy (NIAGARA) — first PBS dispensings recorded Apr-26',
+    states:{NSW:[0,0,0,0,0,0,0,0,0,0,0,0,15],
+      VIC:[0,0,0,0,0,0,0,0,0,0,0,0,2],
+      QLD:[0,0,0,0,0,0,0,0,0,0,0,0,5],
+      SA:[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      WA:[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      TAS:[0,0,0,0,0,0,0,0,0,0,0,0,1],
+      ACT:[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      NT:[0,0,0,0,0,0,0,0,0,0,0,0,0]}},
+  ENDOMETRIAL:{color:'#059669',desc:'Advanced/recurrent endometrial cancer · durvalumab combination regimens · PBS dispensings from Aug-25',
+    states:{NSW:[0,0,0,0,0,0,0,2,4,4,4,3,3],
+      VIC:[0,0,0,0,0,0,0,2,1,1,1,1,2],
+      QLD:[0,0,0,0,0,0,0,2,0,0,0,2,1],
+      SA:[0,0,0,0,1,1,1,1,0,0,0,1,2],
+      WA:[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      TAS:[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      ACT:[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      NT:[0,0,0,0,0,0,0,0,0,0,0,0,0]}}
+};
+// CASPIAN / ES-SCLC — Durva vs Atezo, Init & Cont (12 months May25→Apr26)
+const ESC={
+  desc:'Extensive-stage SCLC 1L · Durvalumab (init 13775B/13779F · cont 13766M/13780G) vs Atezolizumab (init 11926Q/11927R · cont 11928T/11929W/12076N/12078Q)',
+  init:{durva:{NSW:[25,20,16,26,34,29,20,28,23,26,23,30],VIC:[25,11,24,11,10,17,8,28,20,20,11,18],
+      QLD:[12,22,31,29,22,18,17,27,11,12,18,20],SA:[2,6,8,5,4,0,1,3,2,6,7,2],
+      WA:[13,6,7,8,8,11,16,6,9,7,11,15],TAS:[0,1,0,0,0,0,0,0,0,0,0,1],
+      ACT:[0,0,0,0,0,0,0,0,0,0,0,0],NT:[0,0,0,0,0,0,0,0,0,0,1,3]},
+    atezo:{NSW:[60,76,77,71,69,79,69,70,66,57,64,72],VIC:[46,69,56,39,48,56,30,40,36,29,31,30],
+      QLD:[32,37,52,40,43,61,53,57,50,50,53,39],SA:[17,17,21,22,20,19,12,10,15,13,17,21],
+      WA:[18,19,18,20,39,31,27,29,32,23,21,25],TAS:[2,2,5,2,6,7,5,7,2,2,10,7],
+      ACT:[0,0,0,0,0,0,0,0,0,0,0,0],NT:[5,4,1,0,0,2,1,5,2,5,2,2]}},
+  cont:{durva:{NSW:[19,24,26,20,17,22,25,32,27,17,22,24],VIC:[8,18,22,8,5,14,4,11,10,13,11,11],
+      QLD:[7,13,15,13,11,15,18,15,12,13,16,10],SA:[5,3,5,3,5,6,2,7,3,3,9,4],
+      WA:[7,9,8,5,3,10,7,4,11,5,8,7],TAS:[0,0,0,0,0,0,2,1,0,0,1,1],
+      ACT:[0,0,0,0,0,0,0,0,0,0,0,0],NT:[0,0,0,0,0,0,0,0,0,0,0,0]},
+    atezo:{NSW:[88,132,114,96,115,100,99,113,98,98,102,119],VIC:[99,86,103,67,81,95,48,70,66,82,70,57],
+      QLD:[100,88,74,80,71,86,66,78,83,79,72,66],SA:[29,40,32,35,41,41,35,25,36,29,27,30],
+      WA:[45,41,44,34,46,48,38,47,42,36,52,43],TAS:[8,10,3,6,4,3,4,5,2,4,3,7],
+      ACT:[0,2,3,0,1,2,3,0,0,2,0,2],NT:[3,1,1,2,1,0,0,0,0,2,2,2]}}
+};
+const natOf=obj=>MONTHS12.map((_,i)=>sum(STATE_ORDER.map(s=>obj[s][i])));
+
+let ddAreaChart,ddContribChart;
+let currentInd='PACIFIC', currentSeg='all', ddMode='pct', ddMatrixSeg='all';
+// returns {durva,atezo} per-state monthly objects for a segment ('init','cont','all')
+function segData(seg){
+  if(seg!=='all') return ESC[seg];
+  const comb=mol=>{const o={};STATE_ORDER.forEach(s=>{o[s]=MONTHS12.map((_,i)=>ESC.init[mol][s][i]+ESC.cont[mol][s][i]);});return o;};
+  return {durva:comb('durva'),atezo:comb('atezo')};
+}
+// ABS estimated resident population, millions (Dec-2025 approx)
+const POP={NSW:8.55,VIC:7.05,QLD:5.66,SA:1.89,WA:3.05,TAS:0.58,ACT:0.48,NT:0.26};
+
+function setCard(idVal,idU,val,unit){const e=document.getElementById(idVal);
+  e.textContent=val.t!==undefined?val.t:val; if(val.c)e.style.color=val.c;
+  document.getElementById(idU).textContent=unit;}
+
+/* ---- SINGLE-PRODUCT MODE (PACIFIC / ADRIATIC) ---- */
+function renderSingle(ind){
+  const data=IND[ind], nat=MONTHS.map((_,i)=>sum(STATE_ORDER.map(s=>data.states[s][i]))), tot13=sum(nat);
+  document.getElementById('segSel').style.display='none';
+  document.getElementById('ddMatrixSeg').style.display='none';
+  document.getElementById('indDesc').textContent=data.desc;
+  document.getElementById('ddMatL').textContent='MAT — 12M services';
+  document.getElementById('ddMatGL').textContent='MAT growth';
+  document.getElementById('ddRqtrL').textContent='rQTR growth';
+  document.getElementById('ddMomL').textContent='MoM growth';
+
+  const matCur=sum(nat.slice(1,13)), matPrev=sum(nat.slice(0,12));
+  const rqCur=nat[10]+nat[11]+nat[12], rqPrev=nat[7]+nat[8]+nat[9];
+  document.getElementById('ddMat').textContent=matCur.toLocaleString();
+  document.getElementById('ddMat').style.color=data.color;
+  document.getElementById('ddMatU').textContent='May 25 – Apr 26';
+  setCard('ddMatG','ddMatGU',gfmt(matCur,matPrev),'vs prior 12M ('+matPrev.toLocaleString()+')');
+  setCard('ddRqtr','ddRqtrU',gfmt(rqCur,rqPrev),'Feb–Apr 26 ('+rqCur+') vs Nov–Jan 26 ('+rqPrev+')');
+  setCard('ddMom','ddMomU',gfmt(nat[12],nat[11]),'Apr-26 ('+nat[12]+') vs Mar-26 ('+nat[11]+')');
+
+  document.getElementById('ddAreaTitle').innerHTML='Monthly dispensings by state <span class="mono" style="font-size:11px;color:var(--faint)">stacked · Apr 25 → Apr 26</span>';
+  document.getElementById('ddContribTitle').innerHTML='State contribution <span class="mono" style="font-size:11px;color:var(--faint)">% of 13M total</span>';
+  document.getElementById('ddMatrixTitle').innerHTML='Per-state, per-month matrix <span class="mono" style="font-size:11px;color:var(--faint)">cell shading = relative volume</span>';
+
+  const stackDs=STATE_ORDER.map(s=>({label:s,data:data.states[s],
+    backgroundColor:SC[s],borderRadius:1,borderWidth:0,barPercentage:.92,categoryPercentage:.9}));
+  if(ddAreaChart)ddAreaChart.destroy();
+  ddAreaChart=new Chart(ddArea,{type:'bar',data:{labels:MONTHS,datasets:stackDs},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:true,labels:{boxWidth:9,boxHeight:9,padding:8,font:{size:10}}},
+        tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,itemSort:(a,b)=>b.raw-a.raw}},
+      scales:{x:{...gridCfg,stacked:true},y:{...gridCfg,stacked:true,beginAtZero:true}}}});
+
+  document.getElementById('ddModeSel').style.display='flex';
+  const perCap=ddMode==='cap';
+  document.getElementById('ddContribTitle').innerHTML = perCap
+    ? 'State penetration <span class="mono" style="font-size:11px;color:var(--faint)">services per 100k population · 13M</span>'
+    : 'State contribution <span class="mono" style="font-size:11px;color:var(--faint)">% of 13M total</span>';
+  const contrib=STATE_ORDER.map(s=>{const v=sum(data.states[s]);
+    return {s,v,pct:tot13?v/tot13*100:0,cap:v/(POP[s]*10)};})
+    .sort((a,b)=>perCap?(b.cap-a.cap):(b.v-a.v));
+  if(ddContribChart)ddContribChart.destroy();
+  ddContribChart=new Chart(ddContrib,{type:'bar',
+    data:{labels:contrib.map(c=>c.s),datasets:[{data:contrib.map(c=>perCap?c.cap:c.pct),backgroundColor:contrib.map(c=>SC[c.s]),borderRadius:4,barPercentage:.72}]},
+    options:{maintainAspectRatio:false,indexAxis:'y',
+      plugins:{tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,
+        callbacks:{label:c=>{const x=contrib[c.dataIndex];
+          return perCap?' '+x.cap.toFixed(1)+' per 100k · '+x.v.toLocaleString()+' services'
+                       :' '+x.v.toLocaleString()+' services · '+x.pct.toFixed(1)+'%';}}}},
+      scales:{x:{...gridCfg,beginAtZero:true,ticks:{callback:v=>perCap?v:v+'%'}},y:{...gridCfg}}}});
+
+  const head=document.getElementById('ddMatrixHead');
+  head.innerHTML='<th>State</th>'+MONTHS.map(m=>'<th>'+m+'</th>').join('')+'<th>13M</th><th>Share</th>';
+  const maxCell=Math.max(...STATE_ORDER.flatMap(s=>data.states[s]),1);
+  const [cr,cg,cb]=hexRGB(data.color);
+  const body=document.getElementById('ddMatrixBody'); body.innerHTML='';
+  STATE_ORDER.forEach(s=>{
+    const rowTot=sum(data.states[s]), share=tot13?(rowTot/tot13*100):0;
+    let cells='';
+    data.states[s].forEach(v=>{const a=(v/maxCell*0.55).toFixed(3);
+      cells+=`<td class="num heat" style="${v>0?`background:rgba(${cr},${cg},${cb},${a})`:''}">${v||'·'}</td>`;});
+    body.innerHTML+=`<tr><td><span class="swatch" style="background:${SC[s]}"></span>${s}</td>${cells}<td class="num rowtot">${rowTot.toLocaleString()}</td><td class="num share">${share.toFixed(1)}%</td></tr>`;
+  });
+  body.innerHTML+=`<tr class="total"><td>National</td>${nat.map(v=>`<td class="num">${v||'·'}</td>`).join('')}<td class="num">${tot13.toLocaleString()}</td><td class="num">100%</td></tr>`;
+
+  const top=contrib[0];
+  document.getElementById('ddNote').textContent = (matPrev===0 && nat[12]>0)
+    ? ind+' is a recent PBS listing: the first dispensings appear in Apr-26 ('+tot13+' services nationally), so quarter- and year-on-year growth read as a new launch. '+top.s+' leads early uptake at '+top.pct.toFixed(1)+'%.'
+    : top.s+' is the largest contributor at '+top.pct.toFixed(1)+'% of '+ind+' volume, followed by '+contrib[1].s+' ('+contrib[1].pct.toFixed(1)+'%) and '+contrib[2].s+' ('+contrib[2].pct.toFixed(1)+'%). Cell shading scales with monthly volume within this indication.';
+}
+
+/* ---- COMPARISON MODE (CASPIAN: Durva vs Atezo, Init/Cont) ---- */
+function renderCaspian(seg){
+  const SD=segData(seg);
+  const D=SD.durva, A=SD.atezo;
+  const dNat=natOf(D), aNat=natOf(A), dTot=sum(dNat), aTot=sum(aNat);
+  const shareNat=MONTHS12.map((_,i)=>{const c=dNat[i]+aNat[i];return c?dNat[i]/c*100:0;});
+  const segFull=seg==='init'?'Initiations':seg==='cont'?'Continuations':'All (Init + Cont)',
+        segTag=seg==='init'?'Init':seg==='cont'?'Cont':'All';
+  const overallShare=(dTot/(dTot+aTot)*100);
+
+  document.getElementById('segSel').style.display='flex';
+  document.getElementById('ddModeSel').style.display='none';
+  document.getElementById('indDesc').textContent=ESC.desc;
+  document.getElementById('ddMatL').textContent='Durvalumab — '+segTag+' 12M';
+  document.getElementById('ddMatGL').textContent='Atezolizumab — '+segTag+' 12M';
+  document.getElementById('ddRqtrL').textContent='Durva rQTR growth';
+  document.getElementById('ddMomL').textContent='Durva MoM growth';
+
+  document.getElementById('ddMat').textContent=dTot.toLocaleString();
+  document.getElementById('ddMat').style.color=C.durva;
+  document.getElementById('ddMatU').textContent='Durva share '+overallShare.toFixed(1)+'% · May 25 – Apr 26';
+  setCard('ddMatG','ddMatGU',{t:aTot.toLocaleString(),c:C.atezo},'Atezo share '+(100-overallShare).toFixed(1)+'%');
+  const rqCur=dNat[9]+dNat[10]+dNat[11], rqPrev=dNat[6]+dNat[7]+dNat[8];
+  setCard('ddRqtr','ddRqtrU',gfmt(rqCur,rqPrev),'Feb–Apr 26 ('+rqCur+') vs Nov–Jan 26 ('+rqPrev+')');
+  setCard('ddMom','ddMomU',gfmt(dNat[11],dNat[10]),'Apr-26 ('+dNat[11]+') vs Mar-26 ('+dNat[10]+')');
+
+  document.getElementById('ddAreaTitle').innerHTML='Durva vs Atezo — monthly <span class="mono" style="font-size:11px;color:var(--faint)">'+segFull+' · gold line = Durva share %</span>';
+  document.getElementById('ddContribTitle').innerHTML='Durva share % by state <span class="mono" style="font-size:11px;color:var(--faint)">'+segFull+'</span>';
+  document.getElementById('ddMatrixTitle').innerHTML='Per-state, per-month — Durva (Atezo) <span class="mono" style="font-size:11px;color:var(--faint)">'+segFull+' · shading = Durva volume</span>';
+
+  // chart 1 : grouped bars + share line
+  if(ddAreaChart)ddAreaChart.destroy();
+  ddAreaChart=new Chart(ddArea,{data:{labels:MONTHS12,datasets:[
+    {type:'bar',label:'Durvalumab',data:dNat,backgroundColor:C.durva,borderRadius:3,barPercentage:.9,categoryPercentage:.72,yAxisID:'y',order:2},
+    {type:'bar',label:'Atezolizumab',data:aNat,backgroundColor:C.atezo,borderRadius:3,barPercentage:.9,categoryPercentage:.72,yAxisID:'y',order:2},
+    {type:'line',label:'Durva share %',data:shareNat,borderColor:C.gold,backgroundColor:'transparent',borderWidth:2.5,tension:.35,pointRadius:0,pointHoverRadius:4,yAxisID:'y1',order:1}
+  ]},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:true,labels:{boxWidth:9,boxHeight:9,padding:8,font:{size:10}}},
+        tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,
+          callbacks:{label:c=>c.dataset.yAxisID==='y1'?' Durva share: '+c.raw.toFixed(1)+'%':' '+c.dataset.label+': '+c.raw}}},
+      scales:{x:{...gridCfg},
+        y:{...gridCfg,beginAtZero:true,title:{display:true,text:'services',color:C.muted,font:{size:10}}},
+        y1:{position:'right',beginAtZero:true,max:50,grid:{drawOnChartArea:false},border:{display:false},ticks:{callback:v=>v+'%',color:C.gold}}}}});
+
+  // chart 2 : Durva share % by state
+  const stateShare=STATE_ORDER.map(s=>{const d=sum(D[s]),a=sum(A[s]),c=d+a;
+    return {s,d,a,pct:c?d/c*100:0};}).filter(x=>x.d+x.a>0).sort((x,y)=>y.pct-x.pct);
+  if(ddContribChart)ddContribChart.destroy();
+  ddContribChart=new Chart(ddContrib,{type:'bar',
+    data:{labels:stateShare.map(x=>x.s),datasets:[{data:stateShare.map(x=>x.pct),backgroundColor:C.durva,borderRadius:4,barPercentage:.72}]},
+    options:{maintainAspectRatio:false,indexAxis:'y',
+      plugins:{tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,
+        callbacks:{label:c=>{const x=stateShare[c.dataIndex];return [' Durva share: '+x.pct.toFixed(1)+'%',' Durva '+x.d+' · Atezo '+x.a];}}}},
+      scales:{x:{...gridCfg,beginAtZero:true,max:40,ticks:{callback:v=>v+'%'}},y:{...gridCfg}}}});
+
+  // bottom matrix has its own category toggle (independent of the charts/KPIs above)
+  document.getElementById('ddMatrixSeg').style.display='flex';
+  renderCaspianMatrix(ddMatrixSeg);
+
+  document.querySelectorAll('#segSel button').forEach(b=>{
+    const on=b.dataset.seg===seg; b.classList.toggle('active',on);
+    b.style.background=on?C.durva:''; b.style.borderColor=on?C.durva:'';
+  });
+}
+
+/* CASPIAN bottom matrix \u2014 driven by its own All/Init/Cont toggle */
+function renderCaspianMatrix(mseg){
+  const SD=segData(mseg), D=SD.durva, A=SD.atezo;
+  const dNat=natOf(D), aNat=natOf(A), dTot=sum(dNat), aTot=sum(aNat);
+  const overallShare=(dTot+aTot)?dTot/(dTot+aTot)*100:0;
+  const segFull=mseg==='init'?'Initiations':mseg==='cont'?'Continuations':'All (Init + Cont)';
+  document.getElementById('ddMatrixTitle').innerHTML='Monthly services per state \u2014 Durva (Atezo) <span class="mono" style="font-size:11px;color:var(--faint)">'+segFull+' \u00b7 shading = Durva volume</span>';
+  const head=document.getElementById('ddMatrixHead');
+  head.innerHTML='<th>State</th>'+MONTHS12.map(m=>'<th>'+m+'</th>').join('')+'<th>Durva</th><th>Atezo</th><th>Share</th>';
+  const maxCell=Math.max(...STATE_ORDER.flatMap(s=>D[s]),1);
+  const [cr,cg,cb]=hexRGB(C.durva);
+  const body=document.getElementById('ddMatrixBody'); body.innerHTML='';
+  STATE_ORDER.forEach(s=>{
+    const dT=sum(D[s]), aT=sum(A[s]), share=(dT+aT)?dT/(dT+aT)*100:0;
+    let cells='';
+    D[s].forEach((dv,i)=>{const av=A[s][i], al=(dv/maxCell*0.55).toFixed(3);
+      const inner=(dv||av)?`${dv||0} <span style="color:var(--faint);font-size:10px">(${av||0})</span>`:'\u00b7';
+      cells+=`<td class="num heat" style="${dv>0?`background:rgba(${cr},${cg},${cb},${al})`:''}">${inner}</td>`;});
+    body.innerHTML+=`<tr><td><span class="swatch" style="background:${SC[s]}"></span>${s}</td>${cells}`+
+      `<td class="num rowtot" style="color:var(--durva)">${dT}</td><td class="num" style="color:var(--atezo)">${aT.toLocaleString()}</td><td class="num share">${(dT+aT)?share.toFixed(1)+'%':'\u2014'}</td></tr>`;
+  });
+  const natCells=MONTHS12.map((_,i)=>`<td class="num">${dNat[i]||0} <span style="color:var(--faint);font-size:10px">(${aNat[i]||0})</span></td>`).join('');
+  body.innerHTML+=`<tr class="total"><td>National</td>${natCells}<td class="num" style="color:var(--durva)">${dTot.toLocaleString()}</td><td class="num" style="color:var(--atezo)">${aTot.toLocaleString()}</td><td class="num">${overallShare.toFixed(1)}%</td></tr>`;
+  const stateShare=STATE_ORDER.map(s=>({s,d:sum(D[s]),a:sum(A[s])})).filter(x=>x.d+x.a>0)
+    .map(x=>({s:x.s,pct:x.d/(x.d+x.a)*100})).sort((x,y)=>y.pct-x.pct);
+  const topS=stateShare[0]||{s:'\u2014',pct:0};
+  document.getElementById('ddNote').textContent='Monthly Durvalumab services per state for ES-SCLC '+segFull+' (Atezolizumab in parentheses). Durva holds '+overallShare.toFixed(1)+'% nationally over the 12 months ('+dTot.toLocaleString()+' vs Atezolizumab '+aTot.toLocaleString()+'); highest Durva share is '+topS.s+' at '+topS.pct.toFixed(1)+'%. Shading scales with Durva volume.';
+  document.querySelectorAll('#ddMatrixSeg button').forEach(b=>{const on=b.dataset.mseg===mseg;
+    b.classList.toggle('active',on); b.style.background=on?C.durva:''; b.style.borderColor=on?C.durva:'';});
+}
+document.querySelectorAll('#ddMatrixSeg button').forEach(b=>{
+  b.addEventListener('click',()=>{ddMatrixSeg=b.dataset.mseg; renderCaspianMatrix(ddMatrixSeg);});
+});
+
+/* ---- dispatcher ---- */
+function renderDeep(){
+  if(currentInd==='CASPIAN') renderCaspian(currentSeg); else renderSingle(currentInd);
+  const colors={PACIFIC:C.durva,CASPIAN:'#2563eb',ADRIATIC:C.gold,BTC:'#7c3aed',HCC:'#ea580c',NIAGARA:'#0891b2',ENDOMETRIAL:'#059669'};
+  document.querySelectorAll('#indSel button').forEach(b=>{
+    const on=b.dataset.ind===currentInd; b.classList.toggle('active',on);
+    b.style.background=on?colors[currentInd]:''; b.style.borderColor=on?colors[currentInd]:'';
+  });
+}
+document.querySelectorAll('#indSel button').forEach(b=>{
+  b.addEventListener('click',()=>{currentInd=b.dataset.ind; renderDeep();});
+});
+document.querySelectorAll('#segSel button').forEach(b=>{
+  b.addEventListener('click',()=>{currentSeg=b.dataset.seg; renderCaspian(currentSeg);});
+});
+document.querySelectorAll('#ddModeSel button').forEach(b=>{
+  b.addEventListener('click',()=>{ddMode=b.dataset.mode;
+    document.querySelectorAll('#ddModeSel button').forEach(x=>x.classList.toggle('active',x===b));
+    if(currentInd!=='CASPIAN') renderSingle(currentInd);});
+});
+renderDeep();
+
+/* ---------- BY STATE : growth per indication ---------- */
+const BS_INDS=[
+  {name:'BTC',color:'#7c3aed',k:'BTC'},
+  {name:'PACIFIC',color:C.durva,k:'PACIFIC'},
+  {name:'CASPIAN (ES-SCLC)',color:'#2563eb',caspian:true},
+  {name:'HCC (Liver)',color:'#ea580c',k:'HCC'},
+  {name:'ENDOMETRIAL',color:'#059669',k:'ENDOMETRIAL'},
+  {name:'NIAGARA (Bladder)',color:'#0891b2',k:'NIAGARA'},
+  {name:'ADRIATIC',color:C.gold,k:'ADRIATIC'}
+];
+// CASPIAN per state = Durvalumab init + cont (12 months, May25→Apr26)
+function caspSeries(state){
+  if(state==='ALL') return MONTHS12.map((_,i)=>sum(STATE_ORDER.map(s=>ESC.init.durva[s][i]+ESC.cont.durva[s][i])));
+  return MONTHS12.map((_,i)=>ESC.init.durva[state][i]+ESC.cont.durva[state][i]);
+}
+function bsSeries(ind,state){
+  if(ind.caspian) return caspSeries(state);
+  const st=IND[ind.k].states;
+  return state==='ALL'?MONTHS.map((_,i)=>sum(STATE_ORDER.map(s=>st[s][i]))):st[state];
+}
+// 13-month series (Apr25→Apr26) growth
+function growth13(ser){
+  const matCur=sum(ser.slice(1,13)), matPrev=sum(ser.slice(0,12));
+  return {total:matCur,latest:ser[12],mom:gfmt(ser[12],ser[11]),
+    rqtr:gfmt(ser[10]+ser[11]+ser[12],ser[7]+ser[8]+ser[9]),mat:gfmt(matCur,matPrev)};
+}
+// 12-month series (May25→Apr26) growth; optional prior-12M baseline enables MAT growth
+function growth12(ser,prior){
+  return {total:sum(ser),latest:ser[11],mom:gfmt(ser[11],ser[10]),
+    rqtr:gfmt(ser[9]+ser[10]+ser[11],ser[6]+ser[7]+ser[8]),
+    mat:(prior==null)?null:gfmt(sum(ser),prior)};
+}
+// CASPIAN prior-year baseline (May 24 – Apr 25) — Durvalumab ES-SCLC services, PBS + RPBS,
+// items 13775B + 13779F (init) and 13766M + 13780G (cont), Services Australia PBS item reports
+const CASP_PRIOR={NSW:294,VIC:233,QLD:161,SA:55,WA:89,TAS:13,ACT:0,NT:4};
+const CASP_PRIOR_ALL=849;
+function bsGrowth(ind,state){const s=bsSeries(ind,state);
+  return ind.caspian?growth12(s,state==='ALL'?CASP_PRIOR_ALL:CASP_PRIOR[state]):growth13(s);}
+// state total (durvalumab, all indications) aligned to 13 months
+function bsTotal13(state){
+  const t=Array(13).fill(0);
+  BS_INDS.forEach(ind=>{const s=bsSeries(ind,state);
+    if(ind.caspian){for(let i=0;i<12;i++)t[i+1]+=s[i];}else{for(let i=0;i<13;i++)t[i]+=s[i];}});
+  return t;
+}
+const gcell=g=>g?`<span style="color:${g.c}">${g.t}</span>`:'<span style="color:var(--faint)">n/a</span>';
+let bsAreaChart=null,bsMixChart=null,bsTableSeg='all',bsState='ALL';
+// CASPIAN (ES-SCLC) monthly Durvalumab services by category, aligned to 13 months (Apr-25 = 0)
+function caspByCat(cat,state){
+  const per=(seg)=> state==='ALL'
+    ? MONTHS12.map((_,i)=>sum(STATE_ORDER.map(s=>ESC[seg].durva[s][i])))
+    : ESC[seg].durva[state];
+  let s12;
+  if(cat==='init') s12=per('init');
+  else if(cat==='cont') s12=per('cont');
+  else s12=MONTHS12.map((_,i)=>per('init')[i]+per('cont')[i]);
+  return [0,...s12];
+}
+function renderByState(state){
+  bsState=state;
+  const sName=state==='ALL'?'National (all states)':state;
+  document.getElementById('bsDesc').textContent='Durvalumab dispensing growth for '+sName+', broken out by indication. MoM = Apr-26 vs Mar-26 · rQTR = Feb–Apr 26 vs Nov–Jan 26 · MAT = latest 12M vs prior 12M.';
+
+  // KPI : state-level totals
+  const tot=bsTotal13(state), kg=growth13(tot);
+  document.getElementById('bsKMat').textContent=kg.total.toLocaleString();
+  document.getElementById('bsKMatU').textContent=sName+' · May 25 – Apr 26';
+  setCard('bsKMatG','bsKMatGU',kg.mat,'vs prior 12M');
+  setCard('bsKRqtr','bsKRqtrU',kg.rqtr,'Feb–Apr ('+(tot[10]+tot[11]+tot[12])+') vs Nov–Jan ('+(tot[7]+tot[8]+tot[9])+')');
+  setCard('bsKMom','bsKMomU',kg.mom,'Apr-26 ('+tot[12]+') vs Mar-26 ('+tot[11]+')');
+
+  // stacked monthly by indication (align caspian to 13M)
+  const dsets=BS_INDS.map(ind=>{const s=bsSeries(ind,state);
+    return {label:ind.name,data:ind.caspian?[0,...s]:s,backgroundColor:ind.color,
+      borderRadius:1,borderWidth:0,barPercentage:.92,categoryPercentage:.9};});
+  if(bsAreaChart)bsAreaChart.destroy();
+  bsAreaChart=new Chart(bsArea,{type:'bar',data:{labels:MONTHS,datasets:dsets},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:true,labels:{boxWidth:9,boxHeight:9,padding:7,font:{size:9.5}}},
+        tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,itemSort:(a,b)=>b.raw-a.raw}},
+      scales:{x:{...gridCfg,stacked:true},y:{...gridCfg,stacked:true,beginAtZero:true}}}});
+
+  // build per-indication rows + mix
+  const rows=BS_INDS.map(ind=>({ind,g:bsGrowth(ind,state)}));
+  const mix=rows.filter(r=>r.g.total>0).sort((a,b)=>b.g.total-a.g.total);
+  if(bsMixChart)bsMixChart.destroy();
+  if(mix.length){
+    document.getElementById('bsMix').style.display='';
+    bsMixChart=new Chart(bsMix,{type:'doughnut',
+      data:{labels:mix.map(r=>r.ind.name),datasets:[{data:mix.map(r=>r.g.total),
+        backgroundColor:mix.map(r=>r.ind.color),borderColor:'#ffffff',borderWidth:3,hoverOffset:6}]},
+      options:{maintainAspectRatio:false,cutout:'60%',
+        plugins:{legend:{display:true,position:'right',labels:{boxWidth:9,boxHeight:9,padding:7,font:{size:9.5}}},
+          tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,
+            callbacks:{label:c=>{const t=mix.reduce((x,r)=>x+r.g.total,0);
+              return ' '+c.label+': '+c.raw.toLocaleString()+' ('+(c.raw/t*100).toFixed(1)+'%)';}}}}}});
+  } else {
+    document.getElementById('bsMix').style.display='none';
+  }
+
+  // table
+  const tb=document.getElementById('bsTable'); tb.innerHTML='';
+  rows.sort((a,b)=>b.g.total-a.g.total).forEach(({ind,g})=>{
+    const dim=g.total===0?'opacity:.45':'';
+    tb.innerHTML+=`<tr style="${dim}">
+      <td><span class="swatch" style="background:${ind.color}"></span>${ind.name}</td>
+      <td class="num">${g.total?g.total.toLocaleString():'·'}</td>
+      <td class="num">${g.latest||'·'}</td>
+      <td class="num">${gcell(g.mom)}</td>
+      <td class="num">${gcell(g.rqtr)}</td>
+      <td class="num">${gcell(g.mat)}</td></tr>`;
+  });
+  tb.innerHTML+=`<tr class="total"><td>All indications</td>
+    <td class="num">${kg.total.toLocaleString()}</td><td class="num">${tot[12]}</td>
+    <td class="num">${gcell(kg.mom)}</td><td class="num">${gcell(kg.rqtr)}</td><td class="num">${gcell(kg.mat)}</td></tr>`;
+
+  const lead=mix[0], second=mix[1];
+  document.getElementById('bsNote').textContent =
+    (lead? sName+' is led by '+lead.ind.name+' ('+lead.g.total.toLocaleString()+' services, 12M)'+(second?', then '+second.ind.name+' ('+second.g.total.toLocaleString()+')':'')+'. '
+         : 'No Durvalumab dispensings recorded for '+sName+' over the period. ')+
+    'MAT growth compares the latest 12 months with the prior 12. CASPIAN (ES-SCLC) MAT uses a May 24 \u2013 Apr 25 baseline (849 services nationally, PBS + RPBS) sourced from the Services Australia PBS item reports.';
+
+  document.querySelectorAll('#bsStateSel button').forEach(b=>{const on=b.dataset.bs===state;
+    b.classList.toggle('active',on); b.style.background=on?C.durva:''; b.style.borderColor=on?C.durva:'';});
+
+  renderBsMatrix();
+}
+// bottom table : indication × month for the selected state; toggle switches the ES-SCLC row
+function renderBsMatrix(){
+  const state=bsState;
+  const sName=state==='ALL'?'National':state;
+  document.getElementById('bsMxTitle').innerHTML='Monthly services by indication — '+sName+
+    ' <span class="mono" style="font-size:11px;color:var(--faint)">Apr 25 → Apr 26 · cell shading = volume</span>';
+  // build each indication's 13-month series (ES-SCLC = initiations + continuations)
+  const rows=BS_INDS.map(ind=>{
+    const ser=ind.caspian?caspByCat('all',state):bsSeries(ind,state);
+    return {ind,ser,tot:sum(ser)};
+  }).filter(r=>r.tot>0).sort((a,b)=>b.tot-a.tot);
+  document.getElementById('bsMxHead').innerHTML='<th>Indication</th>'+MONTHS.map(m=>'<th>'+m+'</th>').join('')+'<th>Total</th>';
+  const body=document.getElementById('bsMxBody'); body.innerHTML='';
+  const natTot=Array(13).fill(0);
+  rows.forEach(({ind,ser,tot})=>{
+    const [cr,cg,cb]=hexRGB(ind.color), maxCell=Math.max(...ser,1);
+    let cells='';
+    ser.forEach((v,i)=>{natTot[i]+=v;const a=(v/maxCell*0.55).toFixed(3);
+      cells+=`<td class="num heat" style="${v>0?`background:rgba(${cr},${cg},${cb},${a})`:''}">${v||'·'}</td>`;});
+    body.innerHTML+=`<tr><td><span class="swatch" style="background:${ind.color}"></span>${ind.name}</td>${cells}<td class="num rowtot">${tot.toLocaleString()}</td></tr>`;
+  });
+  if(!rows.length){
+    body.innerHTML=`<tr><td colspan="${MONTHS.length+2}" style="color:var(--faint);text-align:center;padding:18px">No dispensings recorded for ${sName} in this category.</td></tr>`;
+  } else {
+    body.innerHTML+=`<tr class="total"><td>Total</td>${natTot.map(v=>`<td class="num">${v||'·'}</td>`).join('')}<td class="num">${sum(natTot).toLocaleString()}</td></tr>`;
+  }
+  document.getElementById('bsMxNote').textContent='Monthly Durvalumab services for '+sName+', one row per indication. ES-SCLC (CASPIAN) is shown as total dispensings (initiations + continuations) and starts in May-25, so its Apr-25 cell is blank.';
+}
+document.querySelectorAll('#bsStateSel button').forEach(b=>{b.addEventListener('click',()=>renderByState(b.dataset.bs));});
+renderByState('ALL');
+
+/* ---------- ES-SCLC PIES : molecule split by state ---------- */
+let esPieInitChart=null, esPieContChart=null, esPieCombChart=null;
+function molTotals(seg,state){
+  const SD=segData(seg), D=SD.durva, A=SD.atezo;
+  if(state==='ALL') return [sum(STATE_ORDER.map(s=>sum(D[s]))), sum(STATE_ORDER.map(s=>sum(A[s])))];
+  return [sum(D[state]), sum(A[state])];
+}
+function drawPie(canvasId,capId,seg,state,storeFn,prev){
+  const [d,a]=molTotals(seg,state), tot=d+a;
+  const canvas=document.getElementById(canvasId), cap=document.getElementById(capId);
+  if(prev) prev.destroy();
+  if(tot===0){
+    canvas.style.display='none';
+    cap.innerHTML='<span style="color:var(--faint)">No '+(seg==='init'?'initiations':seg==='cont'?'continuations':'services')+' recorded</span>';
+    storeFn(null); return;
+  }
+  canvas.style.display='';
+  const ch=new Chart(canvas,{type:'pie',
+    data:{labels:['Durvalumab','Atezolizumab'],datasets:[{data:[d,a],
+      backgroundColor:[C.durva,C.atezo],borderColor:'#ffffff',borderWidth:3,hoverOffset:8}]},
+    options:{maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:11,bodyFont:{size:13},
+          callbacks:{label:c=>' '+c.label+': '+c.raw.toLocaleString()+' ('+(c.raw/tot*100).toFixed(1)+'%)'}}}}});
+  cap.innerHTML='<b style="color:var(--durva)">Durva '+(d/tot*100).toFixed(1)+'%</b> ('+d.toLocaleString()+')'+
+    ' &nbsp;·&nbsp; <b style="color:var(--atezo)">Atezo '+(a/tot*100).toFixed(1)+'%</b> ('+a.toLocaleString()+')';
+  storeFn(ch);
+}
+function renderESPies(state){
+  drawPie('esPieInit','esPieInitCap','init',state,ch=>esPieInitChart=ch,esPieInitChart);
+  drawPie('esPieCont','esPieContCap','cont',state,ch=>esPieContChart=ch,esPieContChart);
+  drawPie('esPieComb','esPieCombCap','all',state,ch=>esPieCombChart=ch,esPieCombChart);
+  document.querySelectorAll('#esStateSel button').forEach(b=>{
+    const on=b.dataset.st===state; b.classList.toggle('active',on);
+    b.style.background=on?C.durva:''; b.style.borderColor=on?C.durva:'';
+  });
+}
+document.querySelectorAll('#esStateSel button').forEach(b=>{
+  b.addEventListener('click',()=>renderESPies(b.dataset.st));
+});
+renderESPies('ALL');
+
+/* ---------- CM816 / NIVOLUMAB ---------- */
+const CM={NSW:[17,8,14,25,24,19,18,17,16,25,14,9,28],VIC:[12,37,19,21,11,13,26,8,20,17,20,22,25],
+  QLD:[5,12,7,10,3,10,13,17,14,15,12,10,7],SA:[5,3,4,6,4,7,11,9,7,1,3,3,5],
+  WA:[6,9,9,5,9,8,16,12,17,12,8,19,21],TAS:[0,2,1,0,0,0,2,1,1,1,0,0,2],
+  ACT:[0,0,0,1,2,2,1,0,0,0,0,0,2],NT:[0,0,0,0,0,0,0,0,0,0,0,0,0]};
+const cmNat=MONTHS.map((_,i)=>sum(STATE_ORDER.map(s=>CM[s][i])));
+const cmNatTot=sum(cmNat);
+let cmMonthlyChart=null,cmContribChart=null;
+function renderCM(scope){
+  const ser=scope==='ALL'?cmNat:CM[scope], tot13=sum(ser);
+  const matCur=sum(ser.slice(1,13)), matPrev=sum(ser.slice(0,12));
+  const scopeName=scope==='ALL'?'National':scope;
+  const set=(v,u,val,unit)=>{const e=document.getElementById(v);e.textContent=val.t!==undefined?val.t:val;if(val.c)e.style.color=val.c;document.getElementById(u).textContent=unit;};
+
+  document.getElementById('cmMat').textContent=matCur.toLocaleString();
+  document.getElementById('cmMatU').textContent=scopeName+' · May 25 – Apr 26';
+  set('cmMatG','cmMatGU',gfmt(matCur,matPrev),'vs prior 12M ('+matPrev.toLocaleString()+')');
+  const rqC=ser[10]+ser[11]+ser[12], rqP=ser[7]+ser[8]+ser[9];
+  set('cmRqtr','cmRqtrU',gfmt(rqC,rqP),'Feb–Apr 26 ('+rqC+') vs Nov–Jan 26 ('+rqP+')');
+  set('cmMom','cmMomU',gfmt(ser[12],ser[11]),'Apr-26 ('+ser[12]+') vs Mar-26 ('+ser[11]+')');
+
+  document.getElementById('cmMonthlyTitle').innerHTML='Monthly dispensings — '+scopeName+' <span class="mono" style="font-size:11px;color:var(--faint)">shaded = rQTR windows</span>';
+  if(cmMonthlyChart)cmMonthlyChart.destroy();
+  cmMonthlyChart=new Chart(cmMonthly,{type:'bar',
+    data:{labels:MONTHS,datasets:[{label:'CM816',data:ser,backgroundColor:C.cm816,borderRadius:4,barPercentage:.78}]},
+    options:{maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,
+        callbacks:{label:c=>' '+c.raw+' services'}}},
+      scales:baseScales()},
+    plugins:[{id:'cmbands',beforeDraw(c){const{ctx,chartArea:a,scales:{x}}=c;if(!a)return;
+      const band=(i0,i1,col)=>{const x0=x.getPixelForValue(i0),x1=x.getPixelForValue(i1);ctx.save();ctx.fillStyle=col;ctx.fillRect(x0,a.top,x1-x0,a.bottom-a.top);ctx.restore();};
+      band(7,9,'rgba(240,171,0,.08)');band(10,12,'rgba(240,171,0,.16)');}}]});
+
+  const contrib=STATE_ORDER.map(s=>({s,v:sum(CM[s])})).sort((a,b)=>b.v-a.v);
+  if(cmContribChart)cmContribChart.destroy();
+  cmContribChart=new Chart(cmContrib,{type:'bar',
+    data:{labels:contrib.map(c=>c.s),datasets:[{data:contrib.map(c=>cmNatTot?c.v/cmNatTot*100:0),
+      backgroundColor:contrib.map(c=>(scope==='ALL'||c.s===scope)?C.cm816:'#ead9ac'),borderRadius:4,barPercentage:.72}]},
+    options:{maintainAspectRatio:false,indexAxis:'y',
+      plugins:{tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,
+        callbacks:{label:c=>' '+contrib[c.dataIndex].v.toLocaleString()+' services · '+c.raw.toFixed(1)+'%'}}},
+      scales:{x:{...gridCfg,beginAtZero:true,ticks:{callback:v=>v+'%'}},y:{...gridCfg}}}});
+
+  const head=document.getElementById('cmMatrixHead');
+  head.innerHTML='<th>State</th>'+MONTHS.map(m=>'<th>'+m+'</th>').join('')+'<th>13M</th><th>Share</th>';
+  const maxCell=Math.max(...STATE_ORDER.flatMap(s=>CM[s]),1);
+  const body=document.getElementById('cmMatrixBody'); body.innerHTML='';
+  STATE_ORDER.forEach(s=>{
+    const rowTot=sum(CM[s]), share=cmNatTot?rowTot/cmNatTot*100:0;
+    let cells='';
+    CM[s].forEach(v=>{const al=(v/maxCell*0.6).toFixed(3);
+      cells+=`<td class="num heat" style="${v>0?`background:rgba(240,171,0,${al})`:''}">${v||'·'}</td>`;});
+    const sel=s===scope?'box-shadow:inset 3px 0 0 var(--cm816)':'';
+    body.innerHTML+=`<tr><td style="${sel}"><span class="swatch" style="background:${SC[s]}"></span>${s}</td>${cells}<td class="num rowtot">${rowTot.toLocaleString()}</td><td class="num share">${share.toFixed(1)}%</td></tr>`;
+  });
+  body.innerHTML+=`<tr class="total"><td>National</td>${cmNat.map(v=>`<td class="num">${v||'·'}</td>`).join('')}<td class="num">${cmNatTot.toLocaleString()}</td><td class="num">100%</td></tr>`;
+
+  let note;
+  if(tot13===0) note='No CM816 (Nivolumab) dispensings were recorded in '+scopeName+' over the 13-month period.';
+  else if(scope==='ALL') note='CM816 totals 857 services over 13 months — roughly 11% of the Stage III NSCLC maintenance pair against Durvalumab\u2019s PACIFIC. Hospital split is near-even: private (14232C) 448 services / 52.3%, public (14233D) 409 / 47.7%. VIC (29.3%) and NSW (27.3%) are the largest states; volume jumped +42.9% month-on-month into Apr-26 while holding flat across the quarter.';
+  else note=scopeName+' accounts for '+(cmNatTot?(tot13/cmNatTot*100):0).toFixed(1)+'% of national CM816 volume ('+tot13.toLocaleString()+' of 857 services). The bars show its monthly trajectory; shaded bands mark the rQTR comparison windows.';
+  document.getElementById('cmNote').textContent=note;
+
+  document.querySelectorAll('#cmScopeSel button').forEach(b=>{const on=b.dataset.sc===scope;
+    b.classList.toggle('active',on); b.style.background=on?C.cm816:''; b.style.borderColor=on?C.cm816:'';});
+}
+document.querySelectorAll('#cmScopeSel button').forEach(b=>{b.addEventListener('click',()=>renderCM(b.dataset.sc));});
+renderCM('ALL');
+
+/* ---------- OVERVIEW ---------- */
+const natIND=k=>MONTHS.map((_,i)=>sum(STATE_ORDER.map(s=>IND[k].states[s][i])));
+const caspNat=MONTHS12.map((_,i)=>sum(STATE_ORDER.map(s=>ESC.init.durva[s][i]+ESC.cont.durva[s][i])));
+function spark(arr,color){
+  const w=92,h=26,max=Math.max(...arr,1),min=Math.min(...arr),rng=(max-min)||1;
+  const pts=arr.map((v,i)=>(i/(arr.length-1)*w).toFixed(1)+','+(h-2-((v-min)/rng*(h-5))).toFixed(1)).join(' ');
+  return `<svg width="${w}" height="${h}" style="display:block;margin-left:auto"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+const ovRows=[
+  ['BTC','#7c3aed',natIND('BTC')],
+  ['PACIFIC',C.durva,natIND('PACIFIC')],
+  ['CASPIAN','#2563eb',caspNat],
+  ['HCC','#ea580c',natIND('HCC')],
+  ['ENDOMETRIAL','#059669',natIND('ENDOMETRIAL')],
+  ['NIAGARA','#0891b2',natIND('NIAGARA')],
+  ['ADRIATIC',C.gold,natIND('ADRIATIC')]
+];
+const ovT=document.getElementById('ovTable');
+ovRows.forEach(([name,col,ser])=>{
+  const n=ser.length,tot=sum(ser);
+  const g=gfmt(ser[n-3]+ser[n-2]+ser[n-1], ser[n-6]+ser[n-5]+ser[n-4]);
+  ovT.innerHTML+=`<tr><td><span class="swatch" style="background:${col}"></span>${name}</td>
+    <td class="num">${tot.toLocaleString()}</td>
+    <td>${spark(ser,col)}</td>
+    <td class="num">${ser[n-1].toLocaleString()}</td>
+    <td class="num" style="color:${g.c}">${g.t}</td></tr>`;
+});
+
+const sig=(color,title,body)=>`<div style="border-left:3px solid ${color};padding-left:12px">
+  <div class="mono" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:${color};margin-bottom:3px">${title}</div>
+  <div style="color:var(--muted)">${body}</div></div>`;
+document.getElementById('ovSignals').innerHTML=
+  sig('#0891b2','New listings · Apr-26','NIAGARA (bladder, 23 services) and ADRIATIC (durva + treme, 17 services) recorded first PBS dispensings — early uptake led by NSW.')+
+  sig('#ea580c','HCC ramping fast','Listed Nov-25; monthly volume reached 100 services by Apr-26 (326 total to date).')+
+  sig(C.durva,'PACIFIC defending share','89.0% of the Stage III NSCLC pair vs CM816, but volume softened −4.2% rQTR — watch CM816’s +42.9% MoM jump into Apr-26.')+
+  sig(C.atezo,'ES-SCLC headroom','Durva initiation share hit 31.2% in Apr-26, its best month, yet continuations remain ~15% against Atezolizumab’s established base.')+
+  sig('#7c3aed','BTC is the volume anchor','46.4% of total Durvalumab MAT (7,869 services), steady at ~650/mo.');
+
+const cumu=a=>{let t=0;return a.map(v=>t+=v);};
+new Chart(ovLaunch,{type:'line',
+  data:{labels:MONTHS,datasets:[
+    {label:'HCC',data:cumu(natIND('HCC')),borderColor:'#ea580c',backgroundColor:'transparent',tension:.3,borderWidth:2.5,pointRadius:0,pointHoverRadius:5},
+    {label:'ENDOMETRIAL',data:cumu(natIND('ENDOMETRIAL')),borderColor:'#059669',backgroundColor:'transparent',tension:.3,borderWidth:2.5,pointRadius:0,pointHoverRadius:5},
+    {label:'NIAGARA',data:cumu(natIND('NIAGARA')),borderColor:'#0891b2',backgroundColor:'transparent',tension:.3,borderWidth:2.5,pointRadius:0,pointHoverRadius:5},
+    {label:'ADRIATIC',data:cumu(natIND('ADRIATIC')),borderColor:C.gold,backgroundColor:'transparent',tension:.3,borderWidth:2.5,pointRadius:0,pointHoverRadius:5}
+  ]},
+  options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,labels:{boxWidth:10,boxHeight:10,padding:10,font:{size:10}}},
+      tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:12,
+        callbacks:{label:c=>' '+c.dataset.label+': '+c.raw.toLocaleString()+' cumulative'}}},
+    scales:baseScales()}});
+
+const compRows=[['PACIFIC vs CM816',89.0],['ES-SCLC Initiations',26.7],['ES-SCLC Continuations',14.7]];
+new Chart(ovComp,{type:'bar',
+  data:{labels:compRows.map(r=>r[0]),datasets:[{data:compRows.map(r=>r[1]),
+    backgroundColor:[C.durva,C.durva+'cc',C.durva+'88'],borderRadius:5,barPercentage:.6}]},
+  options:{maintainAspectRatio:false,indexAxis:'y',
+    plugins:{tooltip:{backgroundColor:'#2d2a32',borderColor:'#443f4c',borderWidth:1,padding:10,
+      callbacks:{label:c=>' Durvalumab share: '+c.raw+'%'}}},
+    scales:{x:{...gridCfg,beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}},y:{...gridCfg}}}});
+
+/* ---------- sync state selection across ES-SCLC and CM816 ---------- */
+document.querySelectorAll('#esStateSel button').forEach(b=>b.addEventListener('click',()=>renderCM(b.dataset.st)));
+document.querySelectorAll('#cmScopeSel button').forEach(b=>b.addEventListener('click',()=>renderESPies(b.dataset.sc)));
+
+/* ---------- NAV · hash routing · keyboard ---------- */
+const SECTIONS=[...document.querySelectorAll('#nav button')].map(b=>b.dataset.sec);
+function activateSection(id,push=true){
+  if(!document.getElementById(id)) id='overview';
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.sec===id));
+  document.querySelectorAll('section').forEach(x=>x.classList.toggle('active',x.id===id));
+  if(push) history.replaceState(null,'','#'+id);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('#nav button').forEach(b=>{
+  b.addEventListener('click',()=>activateSection(b.dataset.sec));
+});
+window.addEventListener('hashchange',()=>activateSection(location.hash.slice(1),false));
+document.addEventListener('keydown',e=>{
+  if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+  const cur=SECTIONS.indexOf(document.querySelector('#nav button.active').dataset.sec);
+  activateSection(SECTIONS[(cur+(e.key==='ArrowRight'?1:SECTIONS.length-1))%SECTIONS.length]);
+});
+if(location.hash) activateSection(location.hash.slice(1),false);
+</script>
+</body>
+</html>
